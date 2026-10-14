@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#176b55"><title>Daily Money Tracker</title>
+<style>
+:root{--green:#176b55;--pale:#e8f4ef;--bg:#f4f7f5;--ink:#17231f;--muted:#68756f;--line:#dce5e0;--red:#b42318;--blue:#275dad}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--green);color:white;padding:23px 18px 26px;border-radius:0 0 23px 23px}header h1{margin:0;font-size:24px}header p{margin:5px 0 0;font-size:14px;opacity:.9}
+main{max-width:760px;margin:auto;padding:16px}.monthrow{display:flex;gap:10px;align-items:center;margin:0 0 14px}.monthrow label{font-size:13px;color:var(--muted);flex:1}.monthrow input{width:auto;margin-left:7px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.card{background:white;border:1px solid var(--line);border-radius:15px;padding:14px}.card span{display:block;color:var(--muted);font-size:12px}.card strong{display:block;font-size:22px;margin-top:5px;overflow-wrap:anywhere}.card.balance{grid-column:1/-1;background:var(--pale);border-color:#c8e1d6}.income{color:var(--green)}.expense{color:var(--red)}.blue{color:var(--blue)}
+.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:15px;margin:0 0 15px}.panel h2{font-size:17px;margin:0 0 13px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:10px}input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid #ccd8d1;border-radius:10px;margin-top:5px;background:white;color:var(--ink)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}button{font:inherit;font-weight:650;border:0;border-radius:11px;padding:12px 14px;background:var(--green);color:white;cursor:pointer}button.secondary{background:white;border:1px solid var(--line);color:var(--green)}button.danger{background:#fff1f0;border:1px solid #ffd3cf;color:var(--red)}button.bluebtn{background:var(--blue)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.filters{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.account{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}.account:last-child{margin-bottom:0}.accountname{font-weight:700}.accounttype{font-size:12px;color:var(--muted);margin-top:3px}.accountbalance{font-weight:750;white-space:nowrap}
+.entry{border-bottom:1px solid var(--line);padding:12px 0}.entry:last-child{border-bottom:0}.entrytop{display:flex;justify-content:space-between;gap:12px}.entryname{font-weight:700}.sub{font-size:12px;color:var(--muted);margin-top:4px}.amount{font-weight:750;white-space:nowrap}.entrybuttons{display:flex;gap:7px;margin-top:8px}.entrybuttons button{font-size:12px;padding:7px 10px}.empty{font-size:14px;color:var(--muted);padding:10px 0}#message{font-size:13px;color:var(--green);margin:0 0 10px}.note{font-size:12px;color:var(--muted);line-height:1.5}.hidden{display:none!important}
+@media(max-width:390px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.card strong{font-size:19px}.accountbalance{font-size:14px}}
+</style></head>
+<body>
+<header><h1>💰 Daily Money Tracker</h1><p>Track your cash, bank accounts, e-wallets, income and expenses</p></header>
+<main>
+ <div class="monthrow"><label>Report month <input id="month" type="month"></label></div>
+ <div class="cards">
+  <div class="card"><span>Income this month</span><strong class="income" id="income">₱0.00</strong></div>
+  <div class="card"><span>Expenses this month</span><strong class="expense" id="expenses">₱0.00</strong></div>
+  <div class="card balance"><span>Total money across all accounts</span><strong id="totalbalance">₱0.00</strong><span style="margin-top:5px">Monthly net: <b id="net">₱0.00</b></span></div>
+ </div>
+ <p id="message" role="status"></p>
+ <section class="panel">
+  <h2>My accounts</h2><div id="accounts"></div>
+  <div class="actions" style="margin-top:12px"><button onclick="showAccountForm()">＋ Add account</button><button class="secondary" onclick="showTransferForm()">⇄ Transfer money</button></div>
+  <div id="accountformwrap" class="hidden" style="margin-top:14px">
+   <h2 id="accountformtitle">Add account</h2>
+   <form id="accountform"><div class="grid">
+    <label>Account name *<input id="aname" required maxlength="50" placeholder="e.g. BDO Savings"></label>
+    <label>Account type *<select id="atype"><option>Cash</option><option>Bank</option><option>E-wallet</option><option>Other</option></select></label>
+    <label class="full">Starting balance (₱) *<input id="astart" type="number" min="0" step="0.01" required value="0"></label>
+   </div><div class="actions"><button type="submit">Save account</button><button type="button" class="secondary" onclick="hideAccountForm()">Cancel</button></div></form>
+  </div>
+  <div id="transferformwrap" class="hidden" style="margin-top:14px">
+   <h2>Transfer between my accounts</h2>
+   <p class="note">A transfer changes account balances but is not counted as income or an expense.</p>
+   <form id="transferform"><div class="grid">
+    <label>From account *<select id="from" required></select></label>
+    <label>To account *<select id="to" required></select></label>
+    <label>Amount (₱) *<input id="tamount" type="number" min="0.01" step="0.01" required></label>
+    <label>Date *<input id="tdate" type="date" required></label>
+    <label class="full">Transfer fee (₱), if any<input id="tfee" type="number" min="0" step="0.01" value="0"></label>
+   </div><div class="actions"><button type="submit">Record transfer</button><button type="button" class="secondary" onclick="hideTransferForm()">Cancel</button></div></form>
+  </div>
+ </section>
+ <section class="panel">
+  <h2 id="txheading">Add income or expense</h2>
+  <form id="entryform"><div class="grid">
+   <label class="full">Description *<input id="description" required maxlength="100" placeholder="e.g. Salary, groceries, fare"></label>
+   <label>Type *<select id="type"><option value="expense">Expense</option><option value="income">Income</option></select></label>
+   <label>Amount (₱) *<input id="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
+   <label>Account *<select id="account" required></select></label>
+   <label>Date *<input id="date" type="date" required></label>
+   <label>Category *<select id="category" required></select></label>
+   <label class="full">Notes (optional)<textarea id="notes" rows="2" maxlength="250" placeholder="Additional details"></textarea></label>
+  </div><div class="actions"><button type="submit" id="savebtn">Save transaction</button><button type="button" class="secondary" onclick="resetForm()">Cancel / Clear</button></div></form>
+ </section>
+ <section class="panel"><h2>Transaction history</h2>
+  <div class="filters"><input id="search" placeholder="Search transactions…" aria-label="Search transactions"><select id="filtertype"><option value="all">All record types</option><option value="income">Income only</option><option value="expense">Expenses only</option><option value="transfer">Transfers only</option></select></div>
+  <div id="entries"></div>
+  <div class="actions" style="margin-top:12px"><button class="secondary" onclick="exportCSV()">Export CSV backup</button><button class="danger" onclick="clearAll()">Delete all records</button></div>
+ </section>
+ <p class="note">Privacy: this prototype stores data in this browser on this device only. It does not connect to banks or e-wallets, and it does not sync online. Balances update only when you record transactions or transfers. Export CSV regularly to back up your records.</p>
+</main>
+<script>
+const KEY='dailyMoneyTrackerAccountsV2';
+const cats={income:['Salary','Business','Freelance','Allowance','Gift','Interest','Other income'],expense:['Food','Transportation','Housing / Bills','Utilities','Shopping','Health','Education','Family','Entertainment','Debt payment','Bank / e-wallet fee','Other expense']};
+let db={accounts:[],entries:[]},editing=null,editingAccount=null;
+try{db=JSON.parse(localStorage.getItem(KEY))||db}catch(e){}
+if(!Array.isArray(db.accounts))db.accounts=[];if(!Array.isArray(db.entries))db.entries=[];
+if(!db.accounts.length){db.accounts=[{id:'cash-default',name:'Cash wallet',type:'Cash',opening:0,balance:0},{id:'bank-default',name:'Bank account',type:'Bank',opening:0,balance:0},{id:'gcash-default',name:'GCash',type:'E-wallet',opening:0,balance:0},{id:'maya-default',name:'Maya',type:'E-wallet',opening:0,balance:0}];}
+const $=id=>document.getElementById(id);
+function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+$('date').value=today();$('tdate').value=today();$('month').value=today().slice(0,7);
+function peso(n){return '₱'+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function message(t){$('message').textContent=t;setTimeout(()=>$('message').textContent='',3000)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function acct(id){return db.accounts.find(a=>a.id===id)}
+function fillAccountSelect(id,selected){const el=$(id),old=selected||el.value;el.innerHTML=db.accounts.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');if(db.accounts.some(a=>a.id===old))el.value=old}
+function fillCategories(selected){const type=$('type').value;const old=selected||$('category').value;$('category').innerHTML=cats[type].map(c=>`<option>${esc(c)}</option>`).join('');if(cats[type].includes(old))$('category').value=old}
+$('type').addEventListener('change',()=>fillCategories());fillCategories();
+function showAccountForm(id=null){editingAccount=id;const f=$('accountform');f.reset();$('accountformtitle').textContent=id?'Edit account':'Add account';if(id){const a=acct(id);$('aname').value=a.name;$('atype').value=a.type;$('astart').value=a.opening}else $('astart').value='0';$('accountformwrap').classList.remove('hidden')}
+function hideAccountForm(){$('accountformwrap').classList.add('hidden');editingAccount=null}
+$('accountform').addEventListener('submit',e=>{e.preventDefault();const name=$('aname').value.trim(),type=$('atype').value,opening=Number($('astart').value);if(!name||opening<0)return;if(editingAccount){const a=acct(editingAccount);a.name=name;a.type=type;const diff=opening-a.opening;a.opening=opening;a.balance+=diff;message('Account updated.')}else{db.accounts.push({id:'a'+Date.now()+Math.random().toString(16).slice(2,5),name,type,opening,balance:opening});message('Account added.')}hideAccountForm();save()});
+function showTransferForm(){if(db.accounts.length<2){alert('Add at least two accounts first.');return}fillAccountSelect('from');fillAccountSelect('to',db.accounts[1].id);$('tdate').value=today();$('transferformwrap').classList.remove('hidden')}
+function hideTransferForm(){$('transferformwrap').classList.add('hidden')}
+$('transferform').addEventListener('submit',e=>{e.preventDefault();const from=acct($('from').value),to=acct($('to').value),amount=Number($('tamount').value),fee=Number($('tfee').value||0),date=$('tdate').value;if(!from||!to||from.id===to.id){alert('Choose two different accounts.');return}if(amount<=0||fee<0||amount+fee>from.balance){alert('Check the amount and source account balance. The source account must cover the transfer and fee.');return}from.balance-=amount+fee;to.balance+=amount;db.entries.push({id:'tr'+Date.now(),kind:'transfer',description:`Transfer: ${from.name} → ${to.name}`,amount,date,category:'Transfer',notes:fee?`Fee: ${peso(fee)}`:'',accountId:from.id,toAccountId:to.id,fee});if(fee>0){db.entries.push({id:'fee'+Date.now(),kind:'expense',description:'Transfer fee',amount:fee,date,category:'Bank / e-wallet fee',notes:'Transfer fee',accountId:from.id});}hideTransferForm();save();message('Transfer recorded.')});
+function resetForm(){editing=null;$('entryform').reset();$('date').value=today();$('type').value='expense';fillCategories('Food');$('txheading').textContent='Add income or expense';$('savebtn').textContent='Save transaction'}
+$('entryform').addEventListener('submit',e=>{e.preventDefault();const item={kind:$('type').value,description:$('description').value.trim(),amount:Number($('amount').value),date:$('date').value,category:$('category').value,notes:$('notes').value.trim(),accountId:$('account').value};const a=acct(item.accountId);if(!a||!item.description||!item.date||item.amount<=0){alert('Please complete all required fields with a valid amount.');return}if(editing){const old=db.entries.find(x=>x.id===editing);if(old.kind==='income')acct(old.accountId).balance-=old.amount;else acct(old.accountId).balance+=old.amount;Object.assign(old,item);if(item.kind==='income')a.balance+=item.amount;else a.balance-=item.amount;message('Transaction updated.')}else{item.id='e'+Date.now()+Math.random().toString(16).slice(2,5);db.entries.push(item);if(item.kind==='income')a.balance+=item.amount;else a.balance-=item.amount;message('Transaction saved.')}resetForm();save()});
+function editEntry(id){const x=db.entries.find(y=>y.id===id);if(!x||x.kind==='transfer'){alert('Transfer editing is not available yet. Delete it and record it again if needed.');return}editing=id;$('description').value=x.description;$('type').value=x.kind;fillCategories(x.category);fillAccountSelect('account',x.accountId);$('amount').value=x.amount;$('date').value=x.date;$('category').value=x.category;$('notes').value=x.notes||'';$('txheading').textContent='Edit transaction';$('savebtn').textContent='Update transaction';window.scrollTo({top:0,behavior:'smooth'})}
+function deleteEntry(id){const x=db.entries.find(y=>y.id===id);if(!x)return;if(!confirm('Delete this record and reverse its effect on account balances?'))return;if(x.kind==='transfer'){const from=acct(x.accountId),to=acct(x.toAccountId);if(from)from.balance+=x.amount+(x.fee||0);if(to)to.balance-=x.amount;db.entries=db.entries.filter(y=>y.id!==id&&!(x.fee&&y.description==='Transfer fee'&&y.date===x.date&&y.accountId===x.accountId));}else{const a=acct(x.accountId);if(a)a.balance+=x.kind==='income'?-x.amount:x.amount;db.entries=db.entries.filter(y=>y.id!==id)}save();message('Record deleted.')}
+function render(){fillAccountSelect('account');const month=$('month').value,monthly=db.entries.filter(x=>x.date.startsWith(month));const inc=monthly.filter(x=>x.kind==='income').reduce((s,x)=>s+x.amount,0),exp=monthly.filter(x=>x.kind==='expense').reduce((s,x)=>s+x.amount,0);$('income').textContent=peso(inc);$('expenses').textContent=peso(exp);$('net').textContent=peso(inc-exp);$('totalbalance').textContent=peso(db.accounts.reduce((s,a)=>s+a.balance,0));
+ $('accounts').innerHTML=db.accounts.map(a=>`<div class="account"><div><div class="accountname">${esc(a.name)}</div><div class="accounttype">${esc(a.type)} · Starting balance ${peso(a.opening)}</div><div class="entrybuttons"><button class="secondary" onclick="showAccountForm('${a.id}')">Edit</button>${db.accounts.length>1?`<button class="danger" onclick="deleteAccount('${a.id}')">Delete</button>`:''}</div></div><div class="accountbalance">${peso(a.balance)}</div></div>`).join('');
+ const q=$('search').value.toLowerCase(),type=$('filtertype').value;const list=db.entries.filter(x=>x.date.startsWith(month)&&(type==='all'||(type==='transfer'?x.kind==='transfer':x.kind===type))&&(x.description+' '+x.category+' '+(x.notes||'')+' '+(acct(x.accountId)?.name||'')).toLowerCase().includes(q)).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+ $('entries').innerHTML=list.length?list.map(x=>{const isT=x.kind==='transfer',a=acct(x.accountId);return `<div class="entry"><div class="entrytop"><div><div class="entryname">${esc(x.description)}</div><div class="sub">${esc(x.date)} · ${esc(x.category)}${!isT&&a?' · '+esc(a.name):''}${x.notes?' · '+esc(x.notes):''}</div></div><div class="amount ${x.kind==='income'?'income':isT?'blue':'expense'}">${isT?'⇄ ':x.kind==='income'?'+':'−'}${peso(x.amount)}</div></div><div class="entrybuttons">${!isT?`<button class="secondary" onclick="editEntry('${x.id}')">Edit</button>`:''}<button class="danger" onclick="deleteEntry('${x.id}')">Delete</button></div></div>`}).join(''):'<p class="empty">No records for this month and filter yet.</p>';
+ fillAccountSelect('from');fillAccountSelect('to',db.accounts[1]?.id);
+}
+function deleteAccount(id){const a=acct(id);if(!a)return;if(db.entries.some(x=>x.accountId===id||x.toAccountId===id)){alert('This account has transaction records. Delete or reassign those records first.');return}if(confirm(`Delete account "${a.name}"?`)){db.accounts=db.accounts.filter(x=>x.id!==id);save()}}
+$('month').addEventListener('change',render);$('search').addEventListener('input',render);$('filtertype').addEventListener('change',render);
+function exportCSV(){const rows=[['Record type','Date','Description','Category','Account','Destination account','Amount PHP','Notes']];db.entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(x=>rows.push([x.kind,x.date,x.description,x.category,acct(x.accountId)?.name||'',acct(x.toAccountId)?.name||'',x.amount,x.notes||'']));rows.push([],['ACCOUNTS'],['Name','Type','Starting balance PHP','Current balance PHP']);db.accounts.forEach(a=>rows.push([a.name,a.type,a.opening,a.balance]));const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='daily-money-tracker-backup.csv';a.click();URL.revokeObjectURL(url);message('CSV export started.')}
+function clearAll(){if(confirm('Delete all transactions and reset account balances to their starting balances? Export a backup first if needed.')){db.entries=[];db.accounts.forEach(a=>a.balance=a.opening);save();resetForm();message('Transactions cleared.')}}
+render();
+</script></body></html>
